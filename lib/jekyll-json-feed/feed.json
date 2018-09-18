@@ -23,14 +23,13 @@
     {% endif %}
     "items": [
       {% assign posts = site.posts | where_exp: "post", "post.draft != true" %}
-      {% for post in posts limit: 10 %}
+      {% for post in posts %}
         {
             "id": {{ post.id | absolute_url | jsonify }},
             "url": {{ post.url | absolute_url | jsonify }},
             "title": {{ post.title | smartify | strip_html | normalize_whitespace | jsonify }},
-            "content_html": {{ post.content | strip | jsonify }},
-            {% if post.excerpt and post.excerpt != empty %}
-            "summary": {{ post.excerpt | strip_html | normalize_whitespace | jsonify }},
+            {% if post.description and post.description != empty %}
+            "summary": {{ post.description | strip_html | normalize_whitespace | jsonify }},
             {% endif %}
             {% assign post_image = post.image.path | default: post.image %}
             {% if post_image %}
