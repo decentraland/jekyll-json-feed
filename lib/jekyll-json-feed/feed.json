@@ -55,6 +55,7 @@
               {% endif %}
             },
             "tags": {{ post.tags | jsonify }}
+            "categories": {{ post.categories | jsonify }}
         }{% unless forloop.last == true %},{% endunless %}
       {% endfor %}
     ]
