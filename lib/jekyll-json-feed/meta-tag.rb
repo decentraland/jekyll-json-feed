@@ -19,7 +19,7 @@ module JekyllJsonFeed
       {
         :type  => "application/json",
         :rel   => "alternate",
-        :href  => absolute_url(path),
+        :href  => absolute_url("#{path}#{extension}"),
         :title => title,
       }.keep_if { |_, v| v }
     end
@@ -28,9 +28,18 @@ module JekyllJsonFeed
       if config["json_feed"] && config["json_feed"]["path"]
         config["json_feed"]["path"]
       else
-        "feed.json"
+        "feed"
       end
     end
+
+    def extension
+      if config["json_feed"] && config["json_feed"]["extension"]
+        config["json_feed"]["extension"]
+      else
+        ".json"
+      end
+    end
+
 
     def title
       config["title"] || config["name"]

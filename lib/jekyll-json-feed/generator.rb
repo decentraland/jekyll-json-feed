@@ -6,8 +6,22 @@ module JekyllJsonFeed
     # Main plugin action, called by Jekyll-core
     def generate(site)
       @site = site
-      return if file_exists?(feed_path)
-      @site.pages << content_for_file(feed_path, feed_source_path)
+      return if file_exists?("feed.json")
+      
+      @site.pages << make_page("feed.json")
+      @site.pages << make_page("feed.latest.json", { "limit" => 10 })
+
+      @site.tags.keys.each do |tag|
+        next if %r![^a-zA-Z0-9_]!.match?(tag)
+        @site.pages << make_page("feed/t/#{tag}.json", { "tag" => "post.tags contains '#{tag}'" })
+        @site.pages << make_page("feed/t/#{tag}.latest.json", { "tag" => "post.tags contains '#{tag}'", "limit" => 10 })
+      end
+
+      @site.categories.keys.each do |category|
+        next if %r![^a-zA-Z0-9_]!.match?(category)
+        @site.pages << make_page("feed/c/#{category}.json", { "category" => "post.categories contains '#{category}'" })
+        @site.pages << make_page("feed/c/#{category}.latest.json", { "category" => "post.categories contains '#{category}'", "limit" => 10 })
+      end
     end
 
     private
@@ -18,37 +32,27 @@ module JekyllJsonFeed
     # We will strip all of this whitespace to minify the template
     MINIFY_REGEX = %r!(?<=>|})\s+!
 
-    # Path to feed from config, or feed.json for default
-    def feed_path
-      if @site.config["json_feed"] && @site.config["json_feed"]["path"]
-        @site.config["json_feed"]["path"]
-      else
-        "feed.json"
-      end
-    end
-
     # Path to feed.json template file
     def feed_source_path
-      File.expand_path "./feed.json", File.dirname(__FILE__)
+      @feed_source_path ||= File.expand_path "./feed.json", File.dirname(__FILE__)
+    end
+
+    def feed_template
+      @feed_template ||= File.read(feed_source_path).gsub(MINIFY_REGEX, "")
     end
 
     # Checks if a file already exists in the site source
     def file_exists?(file_path)
-      if @site.respond_to?(:in_source_dir)
-        File.exist? @site.in_source_dir(file_path)
-      else
-        File.exist? Jekyll.sanitized_path(@site.source, file_path)
-      end
+      File.exist? @site.in_source_dir(file_path)
     end
 
-    # Generates contents for a file
-    def content_for_file(file_path, file_source_path)
-      file = PageWithoutAFile.new(@site, File.dirname(__FILE__), "", file_path)
-      file.content = File.read(file_source_path).gsub(MINIFY_REGEX, "")
-      file.data["layout"] = nil
-      file.data["sitemap"] = false
-      file.output
-      file
+    def make_page(file_path, data = {})
+      Jekyll::PageWithoutAFile.new(@site, File.dirname(__FILE__), "", file_path).tap do |file|
+        file.content = feed_template
+        file.data.merge!( "layout" => nil, "sitemap" => false )
+        file.data.merge!(data)
+        file.output
+      end
     end
   end
 end
